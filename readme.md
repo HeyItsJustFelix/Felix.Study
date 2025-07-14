@@ -4,6 +4,7 @@ General Permissions (Used to set up study channels/roles)
 - Manage Roles
 - Manage Channels
 - View Channels
+
 Text Permissions
 - Send Messages
 - Create Public Threads
@@ -16,6 +17,7 @@ Text Permissions
 - - Optional
 - Use External Emojis
 - Add Reactions
+
 Voice Permissions (Used for notification sounds)
 - Connect
 - Speak
