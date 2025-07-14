@@ -2,10 +2,15 @@ import discord
 from discord.ext import commands
 from discord.ui import Button, View
 
+from dbmanager import DatabaseManager
+
 class Study(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+        self.db_manager = DatabaseManager("study_sessions.db")
+        self.db_manager.create_tables()
+        print("Study cog initialized and database tables created.")
+        
     @commands.command(name='study')
     async def study(self, ctx):
         """Starts a study session with a button to join."""
