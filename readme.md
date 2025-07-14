@@ -1,4 +1,30 @@
-# Setting up the bot
+# Felix Study Bot
+
+A Discord bot that gamifies studying by rewarding users with XP for participating in study sessions.
+
+## Features
+
+### Study System
+- **Study Sessions**: Users can join/leave study sessions using interactive buttons
+- **XP Rewards**: Earn 15-25 XP every minute while in a study session
+- **Level System**: Uses the same formula as the main bot: `5 * (level²) + 50 * level + 100` XP per level
+- **Level Up Notifications**: Get notified when you reach a new study level
+- **Study Stats**: View detailed statistics including level, XP, and total study time
+- **Leaderboard**: See who the top studiers are in your server
+
+### Commands
+- `/study` - Start or join a study session
+- `/studystats [user]` - View study statistics for yourself or another user
+- `/studyleaderboard` - View the server's study leaderboard
+- `/help` - View all available commands and their descriptions
+
+### Database
+The bot uses SQLite to track:
+- User study statistics (XP, level, total study time)
+- Study sessions (start/end times)
+- User participation in sessions
+
+## Setting up the bot
 Go to the Discord Developers Portal and make a new bot. Make sure to copy the token somewhere safe. Go to the oauth tab and select "Bot" as the Scope, and allow the permissions:
 
 ### General Permissions (Used to set up study channels/roles)
