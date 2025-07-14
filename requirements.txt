@@ -1,1 +1,2 @@
-discord
+discord.py[voice]
+git+https://github.com/Rapptz/discord.py.git@refs/pull/10166/merge
