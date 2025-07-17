@@ -2,3 +2,4 @@ key.py
 **/__pycache__/
 *.db
 componentsv2example.py
+*.mp3
