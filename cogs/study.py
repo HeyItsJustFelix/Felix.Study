@@ -28,7 +28,8 @@ class Study(commands.Cog):
         #     'phase_start': timestamp,
         #     'phase_end': timestamp,
         #     'voice_channel_id': int|None,
-        #     'cycle_count': int
+        #     'cycle_count': int,
+        #     'volume': float (0.0-1.0)
         #   }
         # }}
         self.active_sessions = {}
@@ -162,12 +163,13 @@ class Study(commands.Cog):
             if voice_channel_id:
                 voice_channel = guild.get_channel(voice_channel_id)
                 if voice_channel:
-                    await self.play_notification_sound(voice_channel, new_phase)
+                    volume = pomodoro.get('volume', 0.5)  # Default volume 50%
+                    await self.play_notification_sound(voice_channel, new_phase, volume)
                     
         except Exception as e:
             print(f"Error handling pomodoro phase change: {e}")
 
-    async def play_notification_sound(self, voice_channel, phase):
+    async def play_notification_sound(self, voice_channel, phase, volume=0.5):
         """Play notification sound in voice channel"""
         try:
             # Check if bot is already in a voice channel
@@ -189,10 +191,12 @@ class Study(commands.Cog):
                     await voice_client.disconnect()
                     return
             
-            # Play the sound
+            # Play the sound with volume control
             if os.path.exists(sound_file):
                 source = discord.FFmpegPCMAudio(sound_file)
-                voice_client.play(source)
+                # Create a volume transformer to control volume
+                volume_source = discord.PCMVolumeTransformer(source, volume=volume)
+                voice_client.play(volume_source)
                 
                 # Wait for sound to finish playing
                 while voice_client.is_playing():
@@ -295,7 +299,8 @@ class Study(commands.Cog):
             'phase_start': current_time,
             'phase_end': current_time + (work_minutes * 60),
             'voice_channel_id': voice_channel.id if voice_channel else None,
-            'cycle_count': 1
+            'cycle_count': 1,
+            'volume': 0.5  # Default volume 50%
         }
         
         embed = discord.Embed(
@@ -358,9 +363,81 @@ class Study(commands.Cog):
             voice_channel = interaction.guild.get_channel(voice_channel_id)
             if voice_channel:
                 embed.add_field(name="Voice Notifications", value=f"#{voice_channel.name}", inline=True)
+                # Show volume level
+                volume_percent = int(pomodoro.get('volume', 0.5) * 100)
+                embed.add_field(name="Volume", value=f"{volume_percent}%", inline=True)
+        else:
+            embed.add_field(name="Voice Notifications", value="Disabled", inline=True)
         
         participants = len(session_data['participants'])
         embed.add_field(name="Participants", value=f"{participants} studying", inline=True)
+        
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name='pomovolume', description='Set the volume for pomodoro timer notifications')
+    @app_commands.describe(volume='Volume level from 0 to 100 (default: 50)')
+    async def pomodoro_volume(self, interaction: discord.Interaction, volume: int):
+        """Set the volume for pomodoro timer notifications"""
+        server_id = interaction.guild.id
+        
+        # Validate volume input
+        if volume < 0 or volume > 100:
+            await interaction.response.send_message(
+                "❌ Volume must be between 0 and 100.",
+                ephemeral=True
+            )
+            return
+        
+        # Check if there's an active session
+        if server_id not in self.active_sessions:
+            await interaction.response.send_message(
+                "❌ No active study session found! Use `/study` to start a session first.",
+                ephemeral=True
+            )
+            return
+        
+        session_data = self.active_sessions[server_id]
+        pomodoro = session_data.get('pomodoro')
+        
+        if not pomodoro:
+            await interaction.response.send_message(
+                "❌ No pomodoro timer is active for this session! Use `/pomodoro` to start one first.",
+                ephemeral=True
+            )
+            return
+        
+        # Convert percentage to decimal (0.0-1.0)
+        volume_decimal = volume / 100.0
+        pomodoro['volume'] = volume_decimal
+        
+        embed = discord.Embed(
+            title="🔊 Pomodoro Volume Updated",
+            description=f"Volume set to {volume}%",
+            color=0x4ecdc4
+        )
+        
+        # Show volume bar visualization
+        volume_bars = int(volume / 10)  # 10 bars for 100%
+        volume_display = "█" * volume_bars + "░" * (10 - volume_bars)
+        embed.add_field(name="Volume Level", value=f"`{volume_display}` {volume}%", inline=False)
+        
+        # Test volume with a preview (if voice channel is set)
+        voice_channel_id = pomodoro.get('voice_channel_id')
+        if voice_channel_id:
+            voice_channel = interaction.guild.get_channel(voice_channel_id)
+            if voice_channel:
+                embed.add_field(name="Voice Channel", value=f"#{voice_channel.name}", inline=True)
+                embed.add_field(name="Test Sound", value="Playing preview...", inline=True)
+                
+                # Play a test sound at the new volume
+                try:
+                    await self.play_notification_sound(voice_channel, 'work', volume_decimal)
+                except Exception as e:
+                    embed.set_field_at(1, name="Test Sound", value="❌ Error playing preview", inline=True)
+                    print(f"Error playing test sound: {e}")
+        else:
+            embed.add_field(name="Voice Channel", value="Not set", inline=True)
+            embed.add_field(name="Test Sound", value="No voice channel configured", inline=True)
         
         await interaction.response.send_message(embed=embed)
 
@@ -581,7 +658,17 @@ class Study(commands.Cog):
             value="View information about the current pomodoro timer.\n"
                   "• Shows current phase (work/break)\n"
                   "• Displays time remaining and cycle count\n"
-                  "• Shows timer configuration",
+                  "• Shows timer configuration and volume",
+            inline=False
+        )
+        
+        # Pomodoro volume command
+        embed.add_field(
+            name="🔊 `/pomovolume [volume]`",
+            value="Set the volume for pomodoro timer notifications.\n"
+                  "• Volume range: 0-100 (default: 50)\n"
+                  "• Plays a test sound at the new volume\n"
+                  "• Only works if voice channel is configured",
             inline=False
         )
         
@@ -659,9 +746,56 @@ class PomodoroControlView(View):
         self.study_cog = study_cog
         self.server_id = server_id
     
+    @discord.ui.button(label="Volume Down", style=discord.ButtonStyle.secondary, emoji="🔉")
+    async def volume_down_button(self, interaction: discord.Interaction, button: Button):
+        await self.adjust_volume(interaction, -10)
+    
+    @discord.ui.button(label="Volume Up", style=discord.ButtonStyle.secondary, emoji="🔊")
+    async def volume_up_button(self, interaction: discord.Interaction, button: Button):
+        await self.adjust_volume(interaction, 10)
+    
     @discord.ui.button(label="Stop Timer", style=discord.ButtonStyle.red, emoji="⏰")
     async def stop_timer_button(self, interaction: discord.Interaction, button: Button):
         await self.study_cog.stop_pomodoro(interaction, self.server_id)
+    
+    async def adjust_volume(self, interaction: discord.Interaction, change: int):
+        """Adjust volume by the specified amount"""
+        if self.server_id in self.study_cog.active_sessions:
+            session_data = self.study_cog.active_sessions[self.server_id]
+            pomodoro = session_data.get('pomodoro')
+            
+            if pomodoro:
+                current_volume = int(pomodoro.get('volume', 0.5) * 100)
+                new_volume = max(0, min(100, current_volume + change))
+                
+                # Update the volume
+                pomodoro['volume'] = new_volume / 100.0
+                
+                # Show volume change
+                volume_bars = int(new_volume / 10)
+                volume_display = "█" * volume_bars + "░" * (10 - volume_bars)
+                
+                embed = discord.Embed(
+                    title="🔊 Volume Adjusted",
+                    description=f"Volume: `{volume_display}` {new_volume}%",
+                    color=0x4ecdc4
+                )
+                
+                # Play test sound if voice channel is available
+                voice_channel_id = pomodoro.get('voice_channel_id')
+                if voice_channel_id:
+                    voice_channel = interaction.guild.get_channel(voice_channel_id)
+                    if voice_channel:
+                        try:
+                            await self.study_cog.play_notification_sound(voice_channel, 'work', new_volume / 100.0)
+                        except Exception as e:
+                            print(f"Error playing test sound: {e}")
+                
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ No pomodoro timer is active!", ephemeral=True)
+        else:
+            await interaction.response.send_message("❌ No active study session found!", ephemeral=True)
 
 
 async def setup(bot):

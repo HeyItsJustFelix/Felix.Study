@@ -12,6 +12,13 @@ Place your notification sound files in this directory:
 - Files should be relatively short (2-5 seconds recommended)
 - Make sure FFmpeg is installed on your system for audio playback
 
+## Volume Control
+
+- Use `/pomovolume [0-100]` to adjust notification volume
+- Default volume is 50%
+- Volume can be adjusted with buttons in the pomodoro control panel
+- Test sounds are played when adjusting volume
+
 ## Note
 
 If no sound files are found, the bot will still function but won't play audio notifications in voice channels. Text notifications will still work in the study channel.

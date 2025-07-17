@@ -16,13 +16,16 @@ A Discord bot that gamifies studying by rewarding users with XP for participatin
 - **Configurable Timer**: Set custom work and break durations (default: 25 min work, 5 min break)
 - **Phase Transitions**: Automatically switches between work and break phases
 - **Voice Notifications**: Optional audio notifications in voice channels
+- **Volume Control**: Adjust notification volume from 0-100% with `/pomovolume`
 - **Text Notifications**: Visual notifications in the study channel
 - **Cycle Tracking**: Keeps track of completed pomodoro cycles
+- **Interactive Controls**: Volume adjustment buttons and timer controls
 
 ### Commands
 - `/study` - Start or join a study session
 - `/pomodoro [work_minutes] [break_minutes] [voice_channel]` - Set up a pomodoro timer for the current study session
 - `/pomoinfo` - View information about the current pomodoro timer
+- `/pomovolume [volume]` - Set the volume for pomodoro timer notifications (0-100)
 - `/studystats [user]` - View study statistics for yourself or another user
 - `/studyleaderboard` - View the server's study leaderboard
 - `/help` - View all available commands and their descriptions
