@@ -12,8 +12,17 @@ A Discord bot that gamifies studying by rewarding users with XP for participatin
 - **Study Stats**: View detailed statistics including level, XP, and total study time
 - **Leaderboard**: See who the top studiers are in your server
 
+### Pomodoro Timer
+- **Configurable Timer**: Set custom work and break durations (default: 25 min work, 5 min break)
+- **Phase Transitions**: Automatically switches between work and break phases
+- **Voice Notifications**: Optional audio notifications in voice channels
+- **Text Notifications**: Visual notifications in the study channel
+- **Cycle Tracking**: Keeps track of completed pomodoro cycles
+
 ### Commands
 - `/study` - Start or join a study session
+- `/pomodoro [work_minutes] [break_minutes] [voice_channel]` - Set up a pomodoro timer for the current study session
+- `/pomoinfo` - View information about the current pomodoro timer
 - `/studystats [user]` - View study statistics for yourself or another user
 - `/studyleaderboard` - View the server's study leaderboard
 - `/help` - View all available commands and their descriptions
@@ -48,6 +57,10 @@ Go to the Discord Developers Portal and make a new bot. Make sure to copy the to
 - Connect
 - Speak
 - Move Members
+
+### Additional Requirements for Pomodoro Voice Notifications
+- FFmpeg must be installed on your system for audio playback
+- Place notification sound files in the `sounds/` directory (see sounds/README.md for details)
 
 Inside of the Bot tab, turn on the "Server Members Intent" to allow users to use the bot in DMs and to allow us to DM users
 
